@@ -53,6 +53,23 @@
     background:var(--cream-2);
     border-bottom:1px solid var(--line);
     padding:.9rem 1.2rem;
+  }
+  .search-wrap{
+    max-width:520px; margin:0 auto .8rem; position:relative;
+  }
+  .search-icon{
+    position:absolute; left:.85rem; top:50%; transform:translateY(-50%);
+    width:18px; height:18px; color:var(--muted); pointer-events:none;
+  }
+  #search{
+    width:100%; box-sizing:border-box;
+    padding:.7rem 1rem .7rem 2.5rem;
+    font-size:.95rem; border-radius:999px;
+    border:1.5px solid var(--line); background:#fff; color:var(--ink);
+    outline:none; transition:border-color .15s ease;
+  }
+  #search:focus{ border-color:var(--gold); }
+  .tabs-row{
     display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap;
   }
   .tab{
@@ -153,7 +170,16 @@
     <div class="rope"></div>
   </div>
 
-  <div class="controls" id="tabs"></div>
+  <div class="controls">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" id="search" placeholder="Busca por nombre o ingrediente (ej. lima, gin, cachaça)…" autocomplete="off">
+    </div>
+    <div class="tabs-row" id="tabs"></div>
+  </div>
 
   <main>
     <div class="count" id="count"></div>
@@ -161,6 +187,7 @@
     <div class="grid" id="grid-coctel"></div>
     <div class="section-title" id="title-sinalcohol">Sin alcohol</div>
     <div class="grid" id="grid-sinalcohol"></div>
+    <div id="empty" style="display:none; text-align:center; padding:3rem 1rem; color:var(--muted); font-style:italic;">Ningún cóctel coincide con esa búsqueda.</div>
   </main>
 
 <script>
@@ -357,27 +384,45 @@ const tabs = [
 ];
 document.getElementById('tabs').innerHTML = tabs.map((t,i)=>`<button class="tab${i===0?' active':''}" data-k="${t.k}">${t.l}</button>`).join("");
 
-function applyFilter(k){
+let activeTab = 'all';
+let searchQuery = '';
+
+function applyFilters(){
+  const q = searchQuery.trim().toLowerCase();
   document.querySelectorAll('#grid-coctel .card, #grid-sinalcohol .card').forEach(card=>{
-    const show = (k==='all') || (card.dataset.spirit === k) || (k==='sinalcohol' && card.dataset.cat==='sinalcohol');
-    card.style.display = show ? '' : 'none';
+    const name = card.dataset.name;
+    const c = COCKTAILS.find(x=>x.n===name);
+    const tabOk = (activeTab==='all') || (card.dataset.spirit === activeTab) || (activeTab==='sinalcohol' && card.dataset.cat==='sinalcohol');
+    const searchOk = !q || name.toLowerCase().includes(q) || (c && c.ing && c.ing.toLowerCase().includes(q));
+    card.style.display = (tabOk && searchOk) ? '' : 'none';
   });
 
+  let totalVisible = 0;
   ['coctel','sinalcohol'].forEach(cat=>{
     const grid = document.getElementById('grid-'+cat);
     const title = document.getElementById('title-'+cat);
     const anyVisible = Array.from(grid.children).some(card => card.style.display !== 'none');
     grid.style.display = anyVisible ? '' : 'none';
     title.style.display = anyVisible ? '' : 'none';
+    totalVisible += Array.from(grid.children).filter(card=>card.style.display!=='none').length;
   });
+
+  document.getElementById('count').textContent = totalVisible + (totalVisible===1 ? ' cóctel' : ' cócteles') + (q ? ' encontrados' : ' en la carta');
+  document.getElementById('empty').style.display = totalVisible ? 'none' : 'block';
 }
 
 document.querySelectorAll('.tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    applyFilter(btn.dataset.k);
+    activeTab = btn.dataset.k;
+    applyFilters();
   });
+});
+
+document.getElementById('search').addEventListener('input', (e)=>{
+  searchQuery = e.target.value;
+  applyFilters();
 });
 
 // ---------- Ficha de elaboración ----------
