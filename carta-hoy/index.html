@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1c3454">
+<meta name="robots" content="noindex,nofollow">
+<title>Carta de hoy · L'Àncora</title>
+<style>
+  :root{--navy:#1c3454;--navy-2:#14283f;--gold:#c8963e;--gold2:#e0bd7c;--cream:#F6F1E4;--line:#2c4c73;--muted:#a8bdd6;--red:#c0483a}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--navy);color:var(--cream);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+  .wrap{max-width:620px;margin:0 auto;padding:0 14px calc(40px + env(safe-area-inset-bottom,0px))}
+  header{text-align:center;padding:26px 10px 16px;border-bottom:1px solid var(--line)}
+  header img{height:70px;width:auto;display:block;margin:0 auto}
+  header h1{font-family:ui-serif,Georgia,serif;font-size:24px;margin:10px 0 2px}
+  header p{margin:0;color:var(--muted);font-size:13px}
+  .card{background:var(--navy-2);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:20px;text-align:center}
+  .btn{display:inline-block;border:0;border-radius:14px;padding:16px 22px;font-size:17px;font-weight:700;cursor:pointer}
+  .btn-gold{background:var(--gold);color:var(--navy)}
+  .btn-ghost{background:none;border:1px solid var(--line);color:var(--muted);font-size:14px;padding:10px 14px}
+  .err{color:#ff9b8f;font-size:14px;margin-top:12px}
+  .bar{position:sticky;top:0;z-index:5;background:var(--navy);padding:12px 0 10px;border-bottom:1px solid var(--line)}
+  .summary{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px}
+  .summary b{color:#ff9b8f;font-size:20px}
+  input[type=search]{width:100%;margin-top:10px;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--navy-2);color:var(--cream);font-size:17px}
+  .sec{margin:22px 4px 8px;color:var(--gold2);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+  .row{display:flex;align-items:center;gap:10px;background:var(--navy-2);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 16px;margin:8px 0}
+  .row .n{flex:1;font-size:17px;line-height:1.3}
+  .row.off{border-color:var(--red);background:#3a1f26}
+  .row.off .n{text-decoration:line-through;opacity:.75}
+  .tog{min-width:132px;border:0;border-radius:12px;padding:16px 10px;font-size:15px;font-weight:800;letter-spacing:.04em;cursor:pointer;background:#2f6b4f;color:#fff}
+  .row.off .tog{background:var(--red)}
+  .sug{width:48px;height:52px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--muted);font-size:22px;cursor:pointer}
+  .sug.on{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:26px;color:var(--muted);font-size:12px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--gold);color:var(--navy);padding:12px 18px;border-radius:12px;font-weight:700;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="https://raw.githubusercontent.com/Ancoraroses/lancora-media/main/brand/logo-vertical.png" alt="L'Àncora Bar Restaurant">
+    <h1>Carta de hoy</h1>
+    <p>Toca un plato para marcarlo como agotado. Se quita de la carta del cliente al momento.</p>
+  </header>
+
+  <div id="gate" class="card" hidden>
+    <p>Entra con la cuenta de Google del restaurante.<br>Solo hace falta la primera vez en este móvil.</p>
+    <button class="btn btn-gold" id="login">Entrar</button>
+    <div class="err" id="gateErr" hidden></div>
+  </div>
+
+  <div id="panel" hidden>
+    <div class="bar">
+      <div class="summary"><span>Agotados ahora: <b id="cnt">0</b></span><button class="btn btn-ghost" id="reset">Todo disponible</button></div>
+      <input type="search" id="q" placeholder="Buscar plato…" autocomplete="off">
+    </div>
+    <div id="list"><p style="color:var(--muted);text-align:center;margin-top:30px">Cargando carta…</p></div>
+    <div class="foot"><span>☆ = sugerencia del día (sala)</span><button class="btn btn-ghost" id="logout">Salir</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+(function(){
+  firebase.initializeApp({
+    apiKey:"AIzaSyBwfoTj5OONhFtdyvl4STHvkB2nOLO2hWk",
+    authDomain:"lancora-social.firebaseapp.com",
+    databaseURL:"https://lancora-social-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"lancora-social",
+    storageBucket:"lancora-social.firebasestorage.app",
+    messagingSenderId:"453756091430",
+    appId:"1:453756091430:web:f5b236a7c17eb5ddfd3ae7"
+  });
+  const STAFF_EMAILS=["ancoraroses@gmail.com"];
+  const CARTA_URL="https://ancoraroses.github.io/lancora-carta-comida/lancora-carta-comida.html";
+  const ROOT="carta-estado";
+  const auth=firebase.auth(), db=firebase.database();
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+  const $=id=>document.getElementById(id);
+  const keyOf=n=>encodeURIComponent(n).replace(/\./g,'%2E');
+  let DISHES=[], STATE={};
+
+  function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',1800)}
+  function isStaff(u){return !!(u&&u.email&&STAFF_EMAILS.includes(u.email.toLowerCase()))}
+
+  $('login').onclick=async()=>{
+    $('gateErr').hidden=true;
+    const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+    try{await auth.signInWithPopup(p)}catch(e){
+      if(e&&(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-environment'))auth.signInWithRedirect(p);
+      else if(!(e&&e.code==='auth/popup-closed-by-user')){$('gateErr').textContent='No se ha podido entrar ('+(e&&e.code||e)+')';$('gateErr').hidden=false}
+    }
+  };
+  $('logout').onclick=()=>auth.signOut();
+
+  auth.onAuthStateChanged(u=>{
+    const ok=isStaff(u);
+    $('gate').hidden=ok;$('panel').hidden=!ok;
+    if(u&&!ok){$('gateErr').textContent='La cuenta '+(u.email||'')+' no tiene acceso. Entra con la del restaurante.';$('gateErr').hidden=false}
+    if(ok)start();
+  });
+
+  // Extrae el objeto APP de la carta publicada (misma fuente que ve el cliente)
+  function extractApp(html){
+    const i=html.indexOf('const APP=');if(i<0)return null;
+    let s=html.indexOf('{',i),d=0,str=false,esc=false;
+    for(let j=s;j<html.length;j++){const c=html[j];
+      if(str){if(esc)esc=false;else if(c==='\\')esc=true;else if(c==='"')str=false;continue}
+      if(c==='"')str=true;else if(c==='{')d++;else if(c==='}'){d--;if(!d)return JSON.parse(html.slice(s,j+1))}}
+    return null;
+  }
+
+  let started=false;
+  async function start(){
+    if(started)return;started=true;
+    try{
+      const html=await (await fetch(CARTA_URL+'?t='+Date.now(),{cache:'no-store'})).text();
+      const app=extractApp(html);const seen=new Set();DISHES=[];
+      app.categories.filter(c=>c.id!=='menu-semanal').concat(app.categories.filter(c=>c.id==='menu-semanal')).forEach(c=>{
+        const its=(c.items||[]).concat((c.groups||[]).flatMap(g=>g.items||[]));
+        its.forEach(i=>{const n=typeof i.name==='string'?i.name:(i.name.es||'');if(n&&!seen.has(n)){seen.add(n);DISHES.push({sec:c.title.es,name:n})}});
+      });
+    }catch(e){$('list').innerHTML='<p class="err">No se ha podido cargar la carta. Revisa la conexión y recarga.</p>';return}
+    db.ref(ROOT).on('value',s=>{STATE=s.val()||{};draw()},e=>{$('list').innerHTML='<p class="err">Sin permiso para leer el estado de la carta ('+(e&&e.code||e)+').</p>'});
+  }
+
+  function draw(){
+    const q=($('q').value||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    let html='',last='',cnt=0;
+    DISHES.forEach(d=>{const st=STATE[keyOf(d.name)]||{};if(st.a)cnt++;});
+    DISHES.forEach(d=>{
+      const nn=d.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+      if(q&&!nn.includes(q))return;
+      const st=STATE[keyOf(d.name)]||{};
+      if(d.sec!==last){html+='<div class="sec">'+d.sec+'</div>';last=d.sec}
+      html+='<div class="row'+(st.a?' off':'')+'"><div class="n">'+d.name.replace(/</g,'&lt;')+'</div>'+
+        '<button class="sug'+(st.s?' on':'')+'" data-k="'+keyOf(d.name)+'" data-f="s" aria-label="Sugerencia">☆</button>'+
+        '<button class="tog" data-k="'+keyOf(d.name)+'" data-f="a">'+(st.a?'AGOTADO':'DISPONIBLE')+'</button></div>';
+    });
+    $('list').innerHTML=html||'<p style="color:var(--muted);text-align:center">Ningún plato coincide.</p>';
+    $('cnt').textContent=cnt;
+  }
+
+  $('list').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-k]');if(!b)return;
+    const k=b.dataset.k,f=b.dataset.f,cur=(STATE[k]||{})[f]===true;
+    db.ref(ROOT+'/'+k).update({[f]:!cur,t:firebase.database.ServerValue.TIMESTAMP})
+      .then(()=>toast(f==='a'?(!cur?'Marcado como agotado':'Vuelve a estar disponible'):(!cur?'Sugerencia activada':'Sugerencia quitada')))
+      .catch(err=>toast('Error: '+(err&&err.code||err)));
+  });
+  $('q').addEventListener('input',draw);
+  $('reset').onclick=()=>{
+    if(!confirm('¿Marcar todos los platos como disponibles? (las sugerencias se mantienen)'))return;
+    const up={};Object.keys(STATE).forEach(k=>{if(STATE[k]&&STATE[k].a)up[k+'/a']=false});
+    if(!Object.keys(up).length){toast('Ya está todo disponible');return}
+    db.ref(ROOT).update(up).then(()=>toast('Todo disponible')).catch(err=>toast('Error: '+(err&&err.code||err)));
+  };
+})();
+</script>
+</body>
+</html>
